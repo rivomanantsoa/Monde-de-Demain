@@ -1,0 +1,32 @@
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Flutter / Dart build outputs
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+
+# APK / bundles (built locally, not versioned)
+*.apk
+*.aab
+
+# Android local / signing (never commit)
+**/android/local.properties
+**/android/key.properties
+*.jks
+*.keystore
+
+# Secrets
+.env
+*.env
+
+# Python
+__pycache__/
+*.pyc
+content_pipeline/build.log
