@@ -29,6 +29,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
   bool _restored = false;
   double _offset = 0;
   bool? _wasPaged;
+  Pack? _loaded;
   final _paged = GlobalKey<_PagedReaderState>();
   final _blockKeys = <int, GlobalKey>{}; // scroll mode: built paragraphs
   int _blockCount = 0;
@@ -38,6 +39,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
     super.initState();
     _app = AppScope.read(context);
     _pack = _app.readPack(widget.item);
+    _pack.then((p) {
+      if (mounted) setState(() => _loaded = p);
+    }, onError: (_) {});
     // Track the offset while scrolling: by the time dispose() runs the list
     // is already detached from the controller.
     _scroll.addListener(() {
@@ -91,6 +95,51 @@ class _ReaderScreenState extends State<ReaderScreen> {
         ));
       },
     );
+  }
+
+  // ---------------------------------------------------------------- contents
+  /// Magazine issue: list of its articles; tap to jump there.
+  void _contentsSheet(Pack pack) {
+    final s = _app.s;
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        builder: (ctx, controller) => ListView(
+          controller: controller,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Text(s.contents,
+                  style: const TextStyle(fontFamily: Brand.serif, fontSize: 22, fontWeight: FontWeight.w800)),
+            ),
+            for (var n = 0; n < pack.articles.length; n++)
+              ListTile(
+                leading: Text('${n + 1}',
+                    style: const TextStyle(color: Brand.red, fontWeight: FontWeight.w800, fontSize: 16)),
+                minLeadingWidth: 24,
+                title: Text(pack.articles[n].$2, style: const TextStyle(fontFamily: Brand.serif, fontWeight: FontWeight.w600)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _goToBlock(pack.articles[n].$1);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _goToBlock(int block) {
+    if (_app.pagedReading) {
+      _paged.currentState?.goToAnchor((block, 0));
+    } else {
+      _scrollToBlock(block, 30);
+    }
   }
 
   // ---------------------------------------------------------------- bookmark
@@ -154,8 +203,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
     if (_app.pagedReading) {
       _paged.currentState?.goToAnchor(m.anchor);
     } else {
-      _scrollToBlock(m.block, 8);
+      _scrollToBlock(m.block, 30);
     }
+
   }
 
   /// Scroll mode: the paragraph may not be built yet (lazy list), so jump to
@@ -184,7 +234,24 @@ class _ReaderScreenState extends State<ReaderScreen> {
     }
     if (attemptsLeft == 0 || !_scroll.hasClients) return;
     final pos = _scroll.position;
-    _scroll.jumpTo(pos.maxScrollExtent * (block + 1) / (_blockCount + 2));
+    // Not built yet: move towards it, using the paragraphs currently built
+    // (their indices and average height) to estimate the distance.
+    final built = <int, RenderBox>{};
+    _blockKeys.forEach((i, k) {
+      final box = k.currentContext?.findRenderObject();
+      if (box is RenderBox && box.attached && box.hasSize) built[i] = box;
+    });
+    double target;
+    if (built.isEmpty) {
+      target = pos.maxScrollExtent * (block + 1) / (_blockCount + 2);
+    } else {
+      final first = built.keys.reduce((a, b) => a < b ? a : b);
+      final last = built.keys.reduce((a, b) => a > b ? a : b);
+      final avg = built.values.fold<double>(0, (a, b) => a + b.size.height) / built.length;
+      final steps = block < first ? block - first : block - last;
+      target = pos.pixels + steps * avg;
+    }
+    _scroll.jumpTo(target.clamp(pos.minScrollExtent, pos.maxScrollExtent));
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBlock(block, attemptsLeft - 1));
   }
 
@@ -219,6 +286,25 @@ class _ReaderScreenState extends State<ReaderScreen> {
                     const Text('A', style: TextStyle(fontSize: 26)),
                   ],
                 ),
+                const SizedBox(height: 8),
+                Text(app.s.readingMode, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<bool>(
+                    showSelectedIcon: false,
+                    style: SegmentedButton.styleFrom(
+                      selectedBackgroundColor: Brand.red,
+                      selectedForegroundColor: Brand.white,
+                    ),
+                    segments: [
+                      ButtonSegment(value: true, label: Text(app.s.modePages), icon: const Icon(Icons.auto_stories_outlined)),
+                      ButtonSegment(value: false, label: Text(app.s.modeScroll), icon: const Icon(Icons.swap_vert)),
+                    ],
+                    selected: {app.pagedReading},
+                    onSelectionChanged: (v) => app.pagedReading = v.first,
+                  ),
+                ),
               ],
             ),
           ),
@@ -235,6 +321,12 @@ class _ReaderScreenState extends State<ReaderScreen> {
       appBar: AppBar(
         title: Text(widget.item.title, maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
+          if (_loaded != null && _loaded!.articles.isNotEmpty)
+            IconButton(
+              tooltip: app.s.contents,
+              icon: const Icon(Icons.toc),
+              onPressed: () => _contentsSheet(_loaded!),
+            ),
           BookmarkButton(
             mark: app.bookmarks.get(widget.item.key),
             labels: BookmarkLabels(
@@ -249,12 +341,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
             onRemove: () => app.bookmarks.remove(widget.item.key),
           ),
           IconButton(
-            tooltip: '${app.s.readingMode} : ${app.pagedReading ? app.s.modeScroll : app.s.modePages}',
-            icon: Icon(app.pagedReading ? Icons.swap_vert : Icons.auto_stories_outlined),
-            onPressed: () => app.pagedReading = !app.pagedReading,
-          ),
-          IconButton(
-            tooltip: app.s.textSize,
+            tooltip: '${app.s.textSize} · ${app.s.readingMode}',
             icon: const Icon(Icons.format_size),
             onPressed: _textSizeSheet,
           ),
@@ -323,7 +410,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                     marked: mark?.block == b,
                     onMark: () => _placeMark(b, 0),
                     // align with the first line (after the block's top padding)
-                    markerTop: switch (type) { 'h2' => 32, 'h3' => 22, 'q' => 16, _ => 6 },
+                    markerTop: switch (type) { 'h1' => 64, 'h2' => 32, 'h3' => 22, 'q' => 16, _ => 6 },
                     child: _BlockView(block: pack.blocks[b], number: pack.listNumbers[b], scale: app.textScale),
                   );
                 },
@@ -389,6 +476,25 @@ class _BlockView extends StatelessWidget {
       color: cs.onSurface,
     );
     switch (block.type) {
+      case 'h1': // magazine article title
+        return Padding(
+          padding: const EdgeInsets.only(top: 40, bottom: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(width: 40, height: 5, color: Brand.red),
+              const SizedBox(height: 16),
+              Text(block.text,
+                  style: body.copyWith(fontSize: 28 * scale, height: 1.2, fontWeight: FontWeight.w800)),
+            ],
+          ),
+        );
+      case 'by': // article author
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: Text(block.text,
+              style: TextStyle(fontSize: 14 * scale, color: cs.onSurfaceVariant, fontWeight: FontWeight.w600)),
+        );
       case 'h2':
         return Padding(
           padding: const EdgeInsets.only(top: 28, bottom: 10),
@@ -684,7 +790,7 @@ class _PageView extends StatelessWidget {
   Widget _item(PageItem it, bool marked) {
     final st = styles;
     final Widget body = switch (it.type) {
-      'title' => Column(
+      'title' || 'h1' => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(width: 40, height: 5, color: Brand.red),
@@ -731,13 +837,13 @@ class _PageView extends StatelessWidget {
       _ => _text(it),
     };
     // The title's top gap holds its red bar, drawn inside the item.
-    final top = it.type == 'title' ? 0.0 : it.gapTop;
+    final top = it.type == 'title' || it.type == 'h1' ? 0.0 : it.gapTop;
     return Padding(
       padding: EdgeInsets.only(top: top, bottom: it.gapBottom),
       child: MarkableParagraph(
         marked: marked,
         onMark: () => onMark(it.blockIndex, it.start),
-        markerTop: it.type == 'title' ? 25 : 4,
+        markerTop: it.type == 'title' || it.type == 'h1' ? 25 : 4,
         child: body,
       ),
     );

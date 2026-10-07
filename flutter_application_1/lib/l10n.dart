@@ -52,6 +52,12 @@ class S {
   String get bookmarkHint => t('bookmarkHint');
   String get bookmarkPlaced => t('bookmarkPlaced');
   String get undo => t('undo');
+  String get readTab => t('readTab');
+  String get bibleCourse => t('bibleCourse');
+  String get commentaries => t('commentaries');
+  String get magazines => t('magazines');
+  String get articles => t('articles');
+  String get contents => t('contents');
 
   String size(int bytes) {
     final fr = code == 'fr';
@@ -106,6 +112,12 @@ class S {
       'bookmarkHint': 'Astuce : appui long sur un paragraphe pour le marquer précisément.',
       'bookmarkPlaced': 'Marque-page placé',
       'undo': 'Annuler',
+      'readTab': 'Lire',
+      'bibleCourse': 'Cours de Bible',
+      'commentaries': 'Commentaires',
+      'magazines': 'Revues',
+      'articles': 'articles',
+      'contents': 'Sommaire',
     },
     'en': {
       'chooseLanguage': 'Choose your language',
@@ -152,6 +164,12 @@ class S {
       'bookmarkHint': 'Tip: long-press a paragraph to mark it precisely.',
       'bookmarkPlaced': 'Bookmark placed',
       'undo': 'Undo',
+      'readTab': 'Read',
+      'bibleCourse': 'Bible Course',
+      'commentaries': 'Commentaries',
+      'magazines': 'Magazines',
+      'articles': 'articles',
+      'contents': 'Contents',
     },
     'es': {
       'chooseLanguage': 'Elija su idioma',
@@ -198,6 +216,12 @@ class S {
       'bookmarkHint': 'Consejo: mantenga pulsado un párrafo para marcarlo con precisión.',
       'bookmarkPlaced': 'Marcador colocado',
       'undo': 'Deshacer',
+      'readTab': 'Leer',
+      'bibleCourse': 'Curso bíblico',
+      'commentaries': 'Comentarios',
+      'magazines': 'Revistas',
+      'articles': 'artículos',
+      'contents': 'Índice',
     },
     'de': {
       'chooseLanguage': 'Wählen Sie Ihre Sprache',
@@ -244,6 +268,12 @@ class S {
       'bookmarkHint': 'Tipp: Absatz lange drücken, um ihn genau zu markieren.',
       'bookmarkPlaced': 'Lesezeichen gesetzt',
       'undo': 'Rückgängig',
+      'readTab': 'Lesen',
+      'bibleCourse': 'Bibelkurs',
+      'commentaries': 'Kommentare',
+      'magazines': 'Zeitschriften',
+      'articles': 'Artikel',
+      'contents': 'Inhalt',
     },
     'nl': {
       'chooseLanguage': 'Kies uw taal',
@@ -290,6 +320,12 @@ class S {
       'bookmarkHint': 'Tip: houd een alinea ingedrukt om die precies te markeren.',
       'bookmarkPlaced': 'Bladwijzer geplaatst',
       'undo': 'Ongedaan maken',
+      'readTab': 'Lezen',
+      'bibleCourse': 'Bijbelcursus',
+      'commentaries': 'Commentaren',
+      'magazines': 'Tijdschriften',
+      'articles': 'artikelen',
+      'contents': 'Inhoud',
     },
     'pt': {
       'chooseLanguage': 'Escolha o seu idioma',
@@ -336,6 +372,12 @@ class S {
       'bookmarkHint': 'Dica: mantenha premido um parágrafo para o marcar com precisão.',
       'bookmarkPlaced': 'Marcador colocado',
       'undo': 'Anular',
+      'readTab': 'Ler',
+      'bibleCourse': 'Curso bíblico',
+      'commentaries': 'Comentários',
+      'magazines': 'Revistas',
+      'articles': 'artigos',
+      'contents': 'Sumário',
     },
     'ru': {
       'chooseLanguage': 'Выберите язык',
@@ -382,6 +424,12 @@ class S {
       'bookmarkHint': 'Совет: удерживайте абзац, чтобы точно отметить его.',
       'bookmarkPlaced': 'Закладка поставлена',
       'undo': 'Отменить',
+      'readTab': 'Читать',
+      'bibleCourse': 'Библейский курс',
+      'commentaries': 'Комментарии',
+      'magazines': 'Журналы',
+      'articles': 'статей',
+      'contents': 'Содержание',
     },
     'ar': {
       'chooseLanguage': 'اختر لغتك',
@@ -428,6 +476,12 @@ class S {
       'bookmarkHint': 'نصيحة: اضغط مطولاً على فقرة لتعليمها بدقة.',
       'bookmarkPlaced': 'تم وضع العلامة',
       'undo': 'تراجع',
+      'readTab': 'اقرأ',
+      'bibleCourse': 'دروس الكتاب المقدس',
+      'commentaries': 'تعليقات',
+      'magazines': 'مجلات',
+      'articles': 'مقالات',
+      'contents': 'المحتويات',
     },
     'sw': {
       'chooseLanguage': 'Chagua lugha yako',
@@ -474,6 +528,12 @@ class S {
       'bookmarkHint': 'Kidokezo: bonyeza aya kwa muda kuiwekea alama kwa usahihi.',
       'bookmarkPlaced': 'Alama imewekwa',
       'undo': 'Tendua',
+      'readTab': 'Soma',
+      'bibleCourse': 'Masomo ya Biblia',
+      'commentaries': 'Maoni',
+      'magazines': 'Majarida',
+      'articles': 'makala',
+      'contents': 'Yaliyomo',
     },
   };
 }

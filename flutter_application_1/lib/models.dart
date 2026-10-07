@@ -27,6 +27,9 @@ class Readable {
     this.summary = '',
     this.hasCover = false,
     this.coverPath,
+    this.date = '',
+    this.year,
+    this.articles = const [],
   });
 
   /// Unique local key, e.g. "fr/b/jean-316" or "fr/k/cours/01".
@@ -41,6 +44,50 @@ class Readable {
   final String summary;
   final bool hasCover;
   final String? coverPath;
+
+  /// Publication date as displayed by the site (commentaries).
+  final String date;
+
+  /// Magazine issues: year and article titles (the issue's table of contents).
+  final int? year;
+  final List<String> articles;
+}
+
+/// Commentaries list (`<lang>/commentaires.json`), newest first.
+List<Readable> parseCommentaires(Map<String, dynamic> j) {
+  final lang = j['lang'] as String;
+  return [
+    for (final c in (j['items'] as List? ?? const []))
+      Readable(
+        key: '$lang/m/${c['id']}',
+        path: '$lang/m/${c['id']}.json.gz',
+        title: c['t'] as String,
+        author: c['a'] as String? ?? '',
+        summary: c['s'] as String? ?? '',
+        date: c['d'] as String? ?? '',
+        size: (c['sz'] as num?)?.toInt() ?? 0,
+        version: c['v'] as String? ?? '',
+      ),
+  ];
+}
+
+/// Magazine issues list (`<lang>/revues.json`), newest first.
+List<Readable> parseRevues(Map<String, dynamic> j) {
+  final lang = j['lang'] as String;
+  return [
+    for (final r in (j['items'] as List? ?? const []))
+      Readable(
+        key: '$lang/r/${r['id']}',
+        path: '$lang/r/${r['id']}.json.gz',
+        title: '${r['t']} ${r['y']}',
+        year: (r['y'] as num?)?.toInt(),
+        articles: [for (final a in (r['arts'] as List? ?? const [])) a as String],
+        size: (r['sz'] as num?)?.toInt() ?? 0,
+        version: r['v'] as String? ?? '',
+        hasCover: r['c'] == true,
+        coverPath: '$lang/c/r-${r['id']}.jpg',
+      ),
+  ];
 }
 
 class Course {
@@ -100,7 +147,8 @@ class Catalog {
 }
 
 /// One block of reading content: [type, text].
-/// Types: h2, h3, p, q (quote), li, ol, img (text = url).
+/// Types: h1 (article title in a magazine issue), by (article author),
+/// h2, h3, p, q (quote), li, ol, img (text = url).
 class Block {
   const Block(this.type, this.text);
   final String type;
@@ -121,6 +169,12 @@ class Pack {
     }
     return out;
   }();
+
+  /// Magazine issues: (block index, title) of each article, for the contents.
+  late final List<(int, String)> articles = [
+    for (var i = 0; i < blocks.length; i++)
+      if (blocks[i].type == 'h1') (i, blocks[i].text),
+  ];
 
   factory Pack.fromJson(Map<String, dynamic> j) => Pack(
         title: j['t'] as String? ?? '',

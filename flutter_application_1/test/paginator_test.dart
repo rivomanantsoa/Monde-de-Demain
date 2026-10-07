@@ -48,4 +48,27 @@ void main() {
       expect(pageForAnchor(pages, pages[5].anchor), 5);
     }
   });
+
+  testWidgets('each magazine article starts at the top of a page', (tester) async {
+    final dir = Directory('../content_pipeline/out/fr/r');
+    final f = dir.listSync().whereType<File>().firstWhere((f) => f.path.endsWith('.json.gz'));
+    final pack = Pack.fromJson(jsonDecode(utf8.decode(gzip.decode(f.readAsBytesSync()))));
+    late ReaderStyles st;
+    await tester.pumpWidget(MaterialApp(home: Builder(builder: (c) {
+      st = ReaderStyles(c, 1.0);
+      return const SizedBox();
+    })));
+    final pages = paginate(pack, st, const Size(316, 600), TextDirection.ltr);
+    final starts = [
+      for (final p in pages)
+        for (var k = 0; k < p.items.length; k++)
+          if (p.items[k].type == 'h1') k,
+    ];
+    expect(starts.length, pack.articles.length);
+    expect(starts.every((k) => k == 0), isTrue);
+    // the contents point at the page where each article starts
+    for (final (block, _) in pack.articles) {
+      expect(pages[pageForAnchor(pages, (block, 0))].items.first.blockIndex, block);
+    }
+  });
 }

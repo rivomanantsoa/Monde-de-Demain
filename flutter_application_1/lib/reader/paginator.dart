@@ -96,8 +96,8 @@ class ReaderStyles {
         'h2' => h2,
         'h3' => h3,
         'q' => quote,
-        'title' => title,
-        'author' => author,
+        'title' || 'h1' => title,
+        'author' || 'by' => author,
         _ => body,
       };
 
@@ -107,8 +107,8 @@ class ReaderStyles {
         'h3' => (20, 8),
         'q' => (14, 14),
         'li' || 'ol' => (0, 8),
-        'title' => (21, 10), // 5px red bar + 16px gap drawn in the top gap
-        'author' => (0, 24),
+        'title' || 'h1' => (21, 10), // 5px red bar + 16px gap drawn in the top gap
+        'author' || 'by' => (0, 24),
         'img' => (12, 12),
         _ => (0, 14),
       };
@@ -209,14 +209,18 @@ List<BookPage> paginate(Pack pack, ReaderStyles st, Size size, TextDirection dir
       continue;
     }
 
+    // Each magazine article starts on a new page.
+    if (type == 'h1' && cur.isNotEmpty) newPage();
+
     var runs = parseRuns(text);
     var offset = 0;
     var first = true;
-    final isHeading = type == 'h2' || type == 'h3' || type == 'title';
+    final isHeading = type == 'h2' || type == 'h3' || type == 'title' || type == 'h1';
 
     while (true) {
-      // The title keeps its top gap (it holds the red bar).
-      var top = (cur.isEmpty && type != 'title') || !first ? 0.0 : gapTop;
+      // Titles keep their top gap (it holds the red bar).
+      final barred = type == 'title' || type == 'h1';
+      var top = (cur.isEmpty && !barred) || !first ? 0.0 : gapTop;
       final tp = layout(runs, type);
       // Keep headings with at least two lines of what follows.
       final keep = isHeading ? 2 * bodyLine + gapBottom : 0;

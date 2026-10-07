@@ -10,14 +10,17 @@ import '../theme.dart';
 /// Brochure cover: the real thumbnail when covers are enabled (data saver
 /// off), otherwise a typographic red/black cover drawn locally (0 bytes).
 class Cover extends StatelessWidget {
-  const Cover({super.key, required this.item, this.width = 64});
+  const Cover({super.key, required this.item, this.width = 64, this.aspect = 1.5});
   final Readable item;
   final double width;
+
+  /// Height / width (brochures 1.5, magazines ~1.34).
+  final double aspect;
 
   @override
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
-    final h = width * 1.5;
+    final h = width * aspect;
     final placeholder = _TypographicCover(title: item.title, width: width, height: h);
     if (!item.hasCover) return placeholder;
     return FutureBuilder<File?>(
@@ -193,18 +196,22 @@ class EmptyState extends StatelessWidget {
   }
 }
 
-/// Thin strip shown when the catalog comes from the local copy.
+/// Thin strip shown when a list comes from the local copy (offline).
+/// Defaults to the main catalog; sections pass their own state.
 class OfflineStrip extends StatelessWidget {
-  const OfflineStrip({super.key});
+  const OfflineStrip({super.key, this.fromCache, this.onRefresh});
+  final bool? fromCache;
+  final VoidCallback? onRefresh;
 
   @override
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
-    if (!app.catalogFromCache || app.catalog == null) return const SizedBox.shrink();
+    final offline = fromCache ?? (app.catalogFromCache && app.catalog != null);
+    if (!offline) return const SizedBox.shrink();
     return Material(
       color: Brand.black,
       child: InkWell(
-        onTap: app.refreshCatalog,
+        onTap: onRefresh ?? app.refreshCatalog,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
@@ -212,8 +219,7 @@ class OfflineStrip extends StatelessWidget {
               const Icon(Icons.cloud_off, size: 16, color: Brand.redOnDark),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(app.s.offlineNote,
-                    style: const TextStyle(color: Brand.white, fontSize: 13)),
+                child: Text(app.s.offlineNote, style: const TextStyle(color: Brand.white, fontSize: 13)),
               ),
               const Icon(Icons.refresh, size: 18, color: Colors.white70),
             ],

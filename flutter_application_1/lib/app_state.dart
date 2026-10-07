@@ -88,12 +88,18 @@ class AppState extends ChangeNotifier {
   void saveReadingAnchor(String key, (int, int) a) =>
       _prefs.setStringList('anchor:$key', ['${a.$1}', '${a.$2}']);
 
+  /// Last opened tab of the "Read" screen (defaults to Brochures).
+  int get readTab => _prefs.getInt('readTab') ?? 1;
+  set readTab(int i) => _prefs.setInt('readTab', i);
+
   double readingOffset(String key) => _prefs.getDouble('pos:$key') ?? 0;
   void saveReadingOffset(String key, double offset) => _prefs.setDouble('pos:$key', offset);
 
   Future<void> setLanguage(String code) async {
     await _prefs.setString('lang', code);
     catalog = null;
+    sections.clear();
+    sectionFromCache.clear();
     notifyListeners();
     await refreshCatalog();
   }
@@ -179,6 +185,40 @@ class AppState extends ChangeNotifier {
     catalogLoading = false;
     notifyListeners();
   }
+
+  // ---------------------------------------------------------------- sections
+  /// Large lists (commentaires, revues) are separate files, fetched only
+  /// when their tab is opened — and then with conditional requests.
+  static const sectionNames = ['commentaires', 'revues'];
+  final Map<String, List<Readable>> sections = {};
+  final Set<String> sectionLoading = {};
+  final Set<String> sectionFromCache = {};
+
+  Future<void> loadSection(String name) async {
+    final code = lang;
+    if (code == null || sectionLoading.contains(name)) return;
+    sectionLoading.add(name);
+    notifyListeners();
+    final r = await _getJson('$code/$name.json');
+    if (code == lang) {
+      final j = r.json as Map<String, dynamic>?;
+      if (j != null) {
+        sections[name] = name == 'revues' ? parseRevues(j) : parseCommentaires(j);
+      }
+      r.fromCache ? sectionFromCache.add(name) : sectionFromCache.remove(name);
+    }
+    sectionLoading.remove(name);
+    notifyListeners();
+  }
+
+  /// Every known item of the current language, by key.
+  Map<String, Readable> get knownItems => {
+        for (final b in catalog?.brochures ?? const <Readable>[]) b.key: b,
+        for (final c in catalog?.courses ?? const <Course>[])
+          for (final l in c.lessons) l.key: l,
+        for (final list in sections.values)
+          for (final r in list) r.key: r,
+      };
 
   // ---------------------------------------------------------------- downloads
   /// key -> {"v": version, "sz": bytes on disk, "t": title}

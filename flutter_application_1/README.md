@@ -12,6 +12,22 @@ content_pipeline/          (à côté de ce dossier)
 flutter_application_1/     l'app
 ```
 
+## Contenu : l'onglet « Lire » du site
+
+L'app reprend l'onglet **LIRE** de mondedemain.org, dans le même ordre :
+**Cours de Bible · Brochures · Commentaires · Revues**. La barre du bas contient
+Lire · Hors ligne · Réglages.
+
+| Section | Source | 1 élément | Liste téléchargée |
+|---|---|---|---|
+| Brochures | /brochures | ~30 Ko | avec le catalogue |
+| Commentaires | /commentaire (+ anciens /commentaires) | ~3 Ko | à la 1re ouverture de l'onglet |
+| Revues | /revues (un numéro = tous ses articles) | ~40 Ko | à la 1re ouverture de l'onglet |
+| Cours de Bible | fichiers Markdown (`courses/`) | ~1-5 Ko | avec le catalogue |
+
+Dans une revue, chaque article commence sur une nouvelle page, et le bouton
+**Sommaire** permet de sauter à un article.
+
 ## Pourquoi c'est léger
 
 | | PDF du site | Pack de l'app |
@@ -31,16 +47,23 @@ flutter_application_1/     l'app
 
 ```bash
 cd content_pipeline
-python3 build_content.py            # toutes les langues
-python3 build_content.py --lang fr  # une seule langue
+python3 build_content.py                               # toutes les langues, toutes les sections
+python3 build_content.py --lang fr                     # une seule langue
+python3 build_content.py --lang fr --only revues       # une seule section
+python3 build_content.py --lang fr --limit 3           # essai rapide (3 éléments par section)
 ```
+
+Les pages déjà lues sont gardées dans `.cache/`, donc une relance ne télécharge que
+les nouveautés (`--refresh` pour tout relire). La première génération complète du
+français lit environ 1 400 pages et prend un moment.
 
 Envoyez ensuite le dossier `out/` sur un hébergement statique HTTPS (GitHub Pages,
 Firebase Hosting, Netlify, serveur de l'organisation…). Quand un texte change, son
 hash change et l'app propose « Mettre à jour » sans rien télécharger d'office.
 
-- **Brochures** : le français est extrait de mondedemain.org. Pour les autres langues,
-  il faut écrire un « adapter » dans `build_content.py`, car chaque site a sa propre structure.
+- **Brochures, commentaires, revues** : le français est extrait de mondedemain.org. Pour les
+  autres langues, il faut écrire un « adapter » par section dans `build_content.py`
+  (clé `sections` de chaque langue), car chaque site a sa propre structure.
 - **Cours** : coursdebible.org exige une inscription. Les leçons s'ajoutent donc en
   Markdown dans `courses/<lang>/<cours>/` (voir `courses/README.md`).
   `courses/fr/exemple` n'est qu'un modèle à supprimer.

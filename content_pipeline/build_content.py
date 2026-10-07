@@ -7,7 +7,11 @@ tiny static "packs" that the app downloads on demand:
 
     out/
       index.json                 languages list (~1 KB)
-      <lang>/catalog.json        list of brochures + courses (~10-20 KB)
+      <lang>/catalog.json        brochures + courses (~10-20 KB)
+      <lang>/commentaires.json   commentaries list (fetched when the tab opens)
+      <lang>/revues.json         magazine issues list (fetched when the tab opens)
+      <lang>/m/<id>.json.gz      one commentary
+      <lang>/r/<id>.json.gz      one magazine issue (all its articles)
       <lang>/b/<id>.json.gz      one brochure, plain structured text (~20-40 KB)
       <lang>/k/<course>/<n>.json.gz   one course lesson
       <lang>/c/<id>.jpg          tiny cover thumbnail (~5 KB, optional)
@@ -45,28 +49,31 @@ OUT = os.path.join(HERE, "out")
 COURSES_DIR = os.path.join(HERE, "courses")
 UA = "Mozilla/5.0 (MondeDeDemainApp content builder)"
 
-# Languages offered in the app. `adapter` says how to scrape brochures from
-# that language's site; languages without an adapter still appear in the app
-# and can be filled with local course files only (see courses/README.md).
+# Languages offered in the app. `sections` says which adapter scrapes each
+# section (brochures, commentaires, revues) of that language's site;
+# languages without adapters still appear in the app and can be filled with
+# local course files only (see courses/README.md).
 LANGUAGES = [
     {"code": "fr", "name": "French", "native": "Français", "rtl": False,
-     "site": "https://www.mondedemain.org", "adapter": "drupal_booklets", "list": "/brochures"},
+     "site": "https://www.mondedemain.org", "list": "/brochures",
+     "sections": {"brochures": "drupal_booklets", "commentaires": "drupal_commentaires",
+                  "revues": "drupal_revues"}},
     {"code": "en", "name": "English", "native": "English", "rtl": False,
-     "site": "https://www.tomorrowsworld.org", "adapter": None},
+     "site": "https://www.tomorrowsworld.org"},
     {"code": "es", "name": "Spanish", "native": "Español", "rtl": False,
-     "site": "https://www.elmundodemanana.org", "adapter": None},
+     "site": "https://www.elmundodemanana.org"},
     {"code": "de", "name": "German", "native": "Deutsch", "rtl": False,
-     "site": "https://www.weltvonmorgen.org", "adapter": None},
+     "site": "https://www.weltvonmorgen.org"},
     {"code": "nl", "name": "Dutch", "native": "Nederlands", "rtl": False,
-     "site": "https://www.wereldvanmorgen.nl", "adapter": None},
+     "site": "https://www.wereldvanmorgen.nl"},
     {"code": "pt", "name": "Portuguese", "native": "Português", "rtl": False,
-     "site": "https://www.omundodeamanha.org", "adapter": None},
+     "site": "https://www.omundodeamanha.org"},
     {"code": "ru", "name": "Russian", "native": "Русский", "rtl": False,
-     "site": "https://russian.tomorrowsworld.org", "adapter": None},
+     "site": "https://russian.tomorrowsworld.org"},
     {"code": "ar", "name": "Arabic", "native": "العربية", "rtl": True,
-     "site": "https://arabic.tomorrowsworld.org", "adapter": None},
+     "site": "https://arabic.tomorrowsworld.org"},
     {"code": "sw", "name": "Swahili", "native": "Kiswahili", "rtl": False,
-     "site": "https://swahili.tomorrowsworld.org", "adapter": None},
+     "site": "https://swahili.tomorrowsworld.org"},
 ]
 
 
@@ -82,6 +89,26 @@ def fetch(url, binary=False, retries=3):
                 raise
             print(f"  retry {url}: {e}", file=sys.stderr)
             time.sleep(2 * (attempt + 1))
+
+
+CACHE = os.path.join(HERE, ".cache")
+REFRESH = False  # --refresh: ignore the page cache
+
+
+def fetch_cached(url):
+    """Item pages (one brochure, one article…) rarely change: keep a local
+    copy so re-runs only download what is new. Listings are never cached."""
+    key = hashlib.sha1(url.encode()).hexdigest()
+    path = os.path.join(CACHE, key + ".html")
+    if not REFRESH and os.path.isfile(path):
+        with open(path, encoding="utf-8") as f:
+            return f.read()
+    html = fetch(url)
+    os.makedirs(CACHE, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(html)
+    time.sleep(0.3)  # be gentle with the website
+    return html
 
 
 def write_gz(path, obj):
@@ -104,7 +131,8 @@ def write_json(path, obj):
 # HTML -> compact blocks
 #
 # A pack body is a list of blocks: [type, text] where type is one of
-#   h2, h3, p, q (quote), li (bullet), ol (numbered item), img (url)
+#   h1 (article title, magazines), by (article author), h2, h3, p,
+#   q (quote), li (bullet), ol (numbered item), img (url)
 # Inline text keeps only <b> and <i>; everything else is stripped. This is all
 # the reader needs and keeps packs very small.
 # --------------------------------------------------------------------------
@@ -236,7 +264,7 @@ def scrape_drupal_booklets(lang, limit, out_dir):
         slug = path.rsplit("/", 1)[1]
         author = re.search(r'class="username">([^<]+)', rest)
         print(f"  [{n + 1}/{len(cards)}] {slug}")
-        page = fetch(f"{site}{path}/content")
+        page = fetch_cached(f"{site}{path}/content")
         body = extract_div(page, 'field field-name-body')
         blocks = html_to_blocks(body, site)
         summary_html = extract_div(page, 'content-summary')
@@ -260,7 +288,6 @@ def scrape_drupal_booklets(lang, limit, out_dir):
             "c": cover_ok,       # cover thumbnail available?
             "pdf": urljoin(site, pdf.group(1)) if pdf else None,
         })
-        time.sleep(0.3)  # be gentle with the website
     return items
 
 
@@ -283,7 +310,125 @@ def make_cover(url, dest):
         return False
 
 
-ADAPTERS = {"drupal_booklets": scrape_drupal_booklets}
+def plain(html):
+    return re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", "", html or ""))).strip()
+
+
+def first_paragraph(blocks, n=160):
+    for kind, text in blocks:
+        if kind == "p":
+            t = re.sub(r"</?[bi]>", "", text)
+            return t if len(t) <= n else t[: n - 1].rsplit(" ", 1)[0] + "…"
+    return ""
+
+
+MONTHS_FR = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août",
+             "septembre", "octobre", "novembre", "décembre"]
+
+
+def date_key(display):
+    """'5 juillet 2022' -> '2022-07-05' (sort key; '' when unknown)."""
+    m = re.match(r"(\d{1,2})\s+(\S+)\s+(\d{4})", display.lower())
+    if not m or m.group(2) not in MONTHS_FR:
+        return ""
+    return f"{m.group(3)}-{MONTHS_FR.index(m.group(2)) + 1:02d}-{int(m.group(1)):02d}"
+
+
+# --------------------------------------------------------------------------
+# Adapter: commentaries (/commentaire, paginated ?page=N, newest first)
+# --------------------------------------------------------------------------
+def scrape_drupal_commentaires(lang, limit, out_dir):
+    site = lang["site"]
+    items, page = [], 0
+    while True:
+        listing = fetch(f"{site}/commentaire?page={page}")
+        parts = listing.split('class="blog-t"')[1:]
+        if not parts:
+            break
+        for part in parts:
+            # recent ones live under /commentaire/, older ones under /commentaires/
+            m = re.search(r'<a href="(/commentaires?/[^"?#]+)">(.*?)</a>', part, re.S)
+            if not m:
+                continue
+            if limit and len(items) >= limit:
+                return items
+            path, title = m.group(1), plain(m.group(2))
+            slug = path.rsplit("/", 1)[1]
+            date = re.search(r'date-display-single">([^<]+)<', part)
+            author = re.search(r'class="username">([^<]+)<', part)
+            print(f"  [commentaire {len(items) + 1}] {slug}")
+            html = fetch_cached(site + path)
+            blocks = html_to_blocks(extract_div(html, "field field-name-body"), site)
+            pack = {"id": slug, "t": title, "a": plain(author.group(1)) if author else "",
+                    "blocks": blocks}
+            size, h = write_gz(os.path.join(out_dir, "m", f"{slug}.json.gz"), pack)
+            display = plain(date.group(1)) if date else ""
+            items.append({"id": slug, "t": title, "a": pack["a"],
+                          "d": display, "k": date_key(display),
+                          "s": first_paragraph(blocks), "sz": size, "v": h})
+        page += 1
+    # The site does not list commentaries by date: newest first.
+    items.sort(key=lambda i: i["k"], reverse=True)
+    return items
+
+
+# --------------------------------------------------------------------------
+# Adapter: magazine issues (/revues/<year>/<issue>/<article>). One pack per
+# issue holding all its articles; each article starts with an "h1" block.
+# --------------------------------------------------------------------------
+def scrape_drupal_revues(lang, limit, out_dir):
+    site = lang["site"]
+    root = fetch(site + "/revues")
+    years = sorted({int(y) for y in re.findall(r'href="(?:%s)?/revues/(\d{4})"' % re.escape(site), root)},
+                   reverse=True)
+    issues = []
+    for year in years:
+        year_page = fetch(f"{site}/revues/{year}")
+        paths = list(dict.fromkeys(re.findall(
+            r'href="(?:%s)?(/revues/%d/[^"/?#]+)"' % (re.escape(site), year), year_page)))
+        paths.reverse()  # the year page lists issues oldest first
+        for path in paths:
+            if limit and len(issues) >= limit:
+                return issues
+            slug = path.rsplit("/", 1)[1]
+            iid = f"{year}-{slug}"
+            print(f"  [revue {len(issues) + 1}] {iid}")
+            html = fetch_cached(site + path)
+            heading = re.search(r'class="magazines_year">\s*(.*?)\s*</h3>', html, re.S)
+            title = plain(heading.group(1)) if heading else slug.replace("-", " ").title()
+            title = re.sub(r"^%d\s+" % year, "", title)
+            cover = re.search(r'magazine-view-container">\s*<img src="([^"]+)"', html)
+            pdf = re.search(r'href="([^"]+\.pdf)"', html)
+            blocks, arts = [], []
+            for part in html.split("magazine-view-container text_align_left")[1:]:
+                m = re.search(r'<h2>\s*<a href="([^"]+)">(.*?)</a>', part, re.S)
+                if not m:
+                    continue
+                art_url, art_title = urljoin(site, m.group(1)), plain(m.group(2))
+                author = re.search(r'class="username">([^<]+)<', part)
+                page = fetch_cached(art_url)
+                body = html_to_blocks(extract_div(page, "field field-name-body"), site)
+                refs = html_to_blocks(extract_div(page, "field-name-field-mag-article-references"), site)
+                blocks.append(["h1", art_title])
+                if author:
+                    blocks.append(["by", plain(author.group(1))])
+                blocks += body + refs
+                arts.append(art_title)
+            if not arts:
+                continue
+            pack = {"id": iid, "t": f"{title} {year}", "a": "", "blocks": blocks}
+            size, h = write_gz(os.path.join(out_dir, "r", f"{iid}.json.gz"), pack)
+            cover_ok = bool(cover) and make_cover(cover.group(1), os.path.join(out_dir, "c", f"r-{iid}.jpg"))
+            issues.append({"id": iid, "t": title, "y": year, "sz": size, "v": h, "c": cover_ok,
+                           "arts": arts, "pdf": urljoin(site, pdf.group(1)) if pdf else None})
+    return issues
+
+
+ADAPTERS = {
+    "drupal_booklets": scrape_drupal_booklets,
+    "drupal_commentaires": scrape_drupal_commentaires,
+    "drupal_revues": scrape_drupal_revues,
+}
 
 
 # --------------------------------------------------------------------------
@@ -358,10 +503,16 @@ def build_courses(code, out_dir):
 
 
 def main():
+    global REFRESH
     ap = argparse.ArgumentParser()
     ap.add_argument("--lang", help="only build this language code")
-    ap.add_argument("--limit", type=int, default=0, help="max brochures (testing)")
+    ap.add_argument("--limit", type=int, default=0, help="max items per section (testing)")
+    ap.add_argument("--only", default="brochures,commentaires,revues",
+                    help="sections to rebuild (courses are always rebuilt)")
+    ap.add_argument("--refresh", action="store_true", help="re-download cached pages")
     args = ap.parse_args()
+    REFRESH = args.refresh
+    only = set(args.only.split(","))
 
     index = []
     for lang in LANGUAGES:
@@ -370,22 +521,40 @@ def main():
         catalog_path = os.path.join(out_dir, "catalog.json")
         if not args.lang or args.lang == code:
             print(f"== {code} ({lang['native']})")
-            brochures = []
-            adapter = ADAPTERS.get(lang.get("adapter"))
-            if adapter:
-                brochures = adapter(lang, args.limit, out_dir)
-            else:
-                print("  no brochure adapter yet - courses only")
+            sections = lang.get("sections", {})
+            previous = {}
+            if os.path.isfile(catalog_path):
+                with open(catalog_path, encoding="utf-8") as f:
+                    previous = json.load(f)
+
+            brochures = previous.get("brochures", [])
+            if "brochures" in only:
+                adapter = ADAPTERS.get(sections.get("brochures"))
+                brochures = adapter(lang, args.limit, out_dir) if adapter else []
             courses = build_courses(code, out_dir)
+
+            # Big sections live in their own file, fetched by the app only
+            # when the reader opens that tab.
+            counts = dict(previous.get("sections", {}))
+            for name in ("commentaires", "revues"):
+                adapter = ADAPTERS.get(sections.get(name))
+                if name in only:
+                    items = adapter(lang, args.limit, out_dir) if adapter else []
+                    write_json(os.path.join(out_dir, f"{name}.json"), {"lang": code, "items": items})
+                    counts[name] = len(items)
+                    print(f"  {len(items)} {name}, "
+                          f"{sum(i['sz'] for i in items) / 1024:.0f} KB of packs")
+                counts.setdefault(name, 0)
+
             write_json(catalog_path, {
                 "lang": code,
                 "updated": time.strftime("%Y-%m-%d"),
                 "brochures": brochures,
                 "courses": courses,
+                "sections": counts,
             })
-            total = sum(b["sz"] for b in brochures)
             print(f"  {len(brochures)} brochures, {len(courses)} courses, "
-                  f"{total / 1024:.0f} KB of packs")
+                  f"{sum(b['sz'] for b in brochures) / 1024:.0f} KB of brochure packs")
         # a language is listed when its catalog exists (even if empty)
         if os.path.isfile(catalog_path):
             index.append({k: lang[k] for k in ("code", "name", "native", "rtl")})
