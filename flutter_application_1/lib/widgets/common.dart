@@ -143,6 +143,8 @@ Future<bool> startDownload(BuildContext context, Readable item) async {
   final ok = await app.download(item);
   if (!ok) {
     messenger.showSnackBar(SnackBar(
+      persist: false,
+      duration: const Duration(seconds: 6),
       content: Text(app.s.noConnection),
       action: SnackBarAction(label: app.s.retry, onPressed: () => app.download(item)),
     ));

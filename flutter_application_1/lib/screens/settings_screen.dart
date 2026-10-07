@@ -60,6 +60,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const Divider(),
+          ListTile(
+            leading: const Icon(Icons.auto_stories_outlined),
+            title: Text(s.readingMode),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: SegmentedButton<bool>(
+                showSelectedIcon: false,
+                style: SegmentedButton.styleFrom(
+                  selectedBackgroundColor: Brand.red,
+                  selectedForegroundColor: Brand.white,
+                ),
+                segments: [
+                  ButtonSegment(value: true, label: Text(s.modePages), icon: const Icon(Icons.auto_stories_outlined)),
+                  ButtonSegment(value: false, label: Text(s.modeScroll), icon: const Icon(Icons.swap_vert)),
+                ],
+                selected: {app.pagedReading},
+                onSelectionChanged: (v) => app.pagedReading = v.first,
+              ),
+            ),
+          ),
+          const Divider(),
           // Recomputed on every rebuild so it follows downloads/deletions.
           FutureBuilder<int>(
             future: app.storageBytes(),

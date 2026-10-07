@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_config.dart';
+import 'bookmarks/bookmarks.dart';
 import 'l10n.dart';
 import 'models.dart';
 
@@ -43,6 +44,9 @@ class AppState extends ChangeNotifier {
     return s;
   }
 
+  /// Reading marks for every reader (brochures, lessons, …).
+  late final BookmarkStore bookmarks = BookmarkStore(_prefs)..addListener(notifyListeners);
+
   // ---------------------------------------------------------------- settings
   String? get lang => _prefs.getString('lang');
   S get s => S(lang ?? 'en');
@@ -66,6 +70,23 @@ class AppState extends ChangeNotifier {
     _prefs.setInt('themeMode', m.index);
     notifyListeners();
   }
+
+  /// Book-like pages (default) or continuous scrolling.
+  bool get pagedReading => _prefs.getBool('paged') ?? true;
+  set pagedReading(bool v) {
+    _prefs.setBool('paged', v);
+    notifyListeners();
+  }
+
+  /// Page mode position: (block index, char offset), independent of text size.
+  (int, int) readingAnchor(String key) {
+    final v = _prefs.getStringList('anchor:$key');
+    if (v == null || v.length != 2) return (-1, 0);
+    return (int.tryParse(v[0]) ?? -1, int.tryParse(v[1]) ?? 0);
+  }
+
+  void saveReadingAnchor(String key, (int, int) a) =>
+      _prefs.setStringList('anchor:$key', ['${a.$1}', '${a.$2}']);
 
   double readingOffset(String key) => _prefs.getDouble('pos:$key') ?? 0;
   void saveReadingOffset(String key, double offset) => _prefs.setDouble('pos:$key', offset);
@@ -231,6 +252,8 @@ class AppState extends ChangeNotifier {
       if (await f.exists()) await f.delete();
     }
     _prefs.remove('pos:$key');
+    _prefs.remove('anchor:$key');
+    bookmarks.remove(key);
     await _saveManifest();
     notifyListeners();
   }
@@ -239,6 +262,8 @@ class AppState extends ChangeNotifier {
   Future<void> deleteAll() async {
     for (final key in downloads.keys.toList()) {
       _prefs.remove('pos:$key');
+      _prefs.remove('anchor:$key');
+      bookmarks.remove(key);
     }
     downloads.clear();
     _coverFutures.clear();

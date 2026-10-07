@@ -59,7 +59,13 @@ class CourseScreen extends StatelessWidget {
               ),
               title: Text(course.lessons[i].title,
                   style: const TextStyle(fontFamily: Brand.serif, fontWeight: FontWeight.w600)),
-              subtitle: Text(s.size(course.lessons[i].size)),
+              subtitle: Row(children: [
+                Text(s.size(course.lessons[i].size)),
+                if (app.bookmarks.has(course.lessons[i].key)) ...[
+                  const SizedBox(width: 8),
+                  Icon(Icons.bookmark, size: 16, color: Brand.red, semanticLabel: s.bookmark),
+                ],
+              ]),
               trailing: DownloadButton(item: course.lessons[i]),
               onTap: () => openReadable(context, course.lessons[i], sequence: course.lessons),
             ),

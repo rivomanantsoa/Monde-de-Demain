@@ -42,6 +42,16 @@ class S {
   String get tapToLoadImage => t('tapToLoadImage');
   String get offlineNote => t('offlineNote');
   String get dataNote => t('dataNote');
+  String get readingMode => t('readingMode');
+  String get modePages => t('modePages');
+  String get modeScroll => t('modeScroll');
+  String get bookmark => t('bookmark');
+  String get bookmarkHere => t('bookmarkHere');
+  String get bookmarkGoTo => t('bookmarkGoTo');
+  String get bookmarkRemove => t('bookmarkRemove');
+  String get bookmarkHint => t('bookmarkHint');
+  String get bookmarkPlaced => t('bookmarkPlaced');
+  String get undo => t('undo');
 
   String size(int bytes) {
     final fr = code == 'fr';
@@ -86,6 +96,16 @@ class S {
       'tapToLoadImage': 'Image — toucher pour charger',
       'offlineNote': 'Hors ligne — catalogue enregistré',
       'dataNote': 'Texte seul, compressé : ~30 Ko par brochure au lieu de ~4 Mo en PDF.',
+      'readingMode': 'Mode de lecture',
+      'modePages': 'Pages',
+      'modeScroll': 'Défilement',
+      'bookmark': 'Marque-page',
+      'bookmarkHere': 'Marquer ici',
+      'bookmarkGoTo': 'Aller au marque-page',
+      'bookmarkRemove': 'Retirer le marque-page',
+      'bookmarkHint': 'Astuce : appui long sur un paragraphe pour le marquer précisément.',
+      'bookmarkPlaced': 'Marque-page placé',
+      'undo': 'Annuler',
     },
     'en': {
       'chooseLanguage': 'Choose your language',
@@ -122,6 +142,16 @@ class S {
       'tapToLoadImage': 'Image — tap to load',
       'offlineNote': 'Offline — saved catalog',
       'dataNote': 'Compressed text only: ~30 KB per booklet instead of ~4 MB as PDF.',
+      'readingMode': 'Reading mode',
+      'modePages': 'Pages',
+      'modeScroll': 'Scroll',
+      'bookmark': 'Bookmark',
+      'bookmarkHere': 'Mark here',
+      'bookmarkGoTo': 'Go to bookmark',
+      'bookmarkRemove': 'Remove bookmark',
+      'bookmarkHint': 'Tip: long-press a paragraph to mark it precisely.',
+      'bookmarkPlaced': 'Bookmark placed',
+      'undo': 'Undo',
     },
     'es': {
       'chooseLanguage': 'Elija su idioma',
@@ -158,6 +188,16 @@ class S {
       'tapToLoadImage': 'Imagen — toque para cargar',
       'offlineNote': 'Sin conexión — catálogo guardado',
       'dataNote': 'Solo texto comprimido: ~30 KB por folleto en lugar de ~4 MB en PDF.',
+      'readingMode': 'Modo de lectura',
+      'modePages': 'Páginas',
+      'modeScroll': 'Desplazamiento',
+      'bookmark': 'Marcador',
+      'bookmarkHere': 'Marcar aquí',
+      'bookmarkGoTo': 'Ir al marcador',
+      'bookmarkRemove': 'Quitar marcador',
+      'bookmarkHint': 'Consejo: mantenga pulsado un párrafo para marcarlo con precisión.',
+      'bookmarkPlaced': 'Marcador colocado',
+      'undo': 'Deshacer',
     },
     'de': {
       'chooseLanguage': 'Wählen Sie Ihre Sprache',
@@ -194,6 +234,16 @@ class S {
       'tapToLoadImage': 'Bild — zum Laden tippen',
       'offlineNote': 'Offline — gespeicherter Katalog',
       'dataNote': 'Nur komprimierter Text: ~30 KB pro Broschüre statt ~4 MB als PDF.',
+      'readingMode': 'Lesemodus',
+      'modePages': 'Seiten',
+      'modeScroll': 'Scrollen',
+      'bookmark': 'Lesezeichen',
+      'bookmarkHere': 'Hier markieren',
+      'bookmarkGoTo': 'Zum Lesezeichen',
+      'bookmarkRemove': 'Lesezeichen entfernen',
+      'bookmarkHint': 'Tipp: Absatz lange drücken, um ihn genau zu markieren.',
+      'bookmarkPlaced': 'Lesezeichen gesetzt',
+      'undo': 'Rückgängig',
     },
     'nl': {
       'chooseLanguage': 'Kies uw taal',
@@ -230,6 +280,16 @@ class S {
       'tapToLoadImage': 'Afbeelding — tik om te laden',
       'offlineNote': 'Offline — opgeslagen catalogus',
       'dataNote': 'Alleen gecomprimeerde tekst: ~30 KB per brochure in plaats van ~4 MB als pdf.',
+      'readingMode': 'Leesmodus',
+      'modePages': 'Pagina’s',
+      'modeScroll': 'Scrollen',
+      'bookmark': 'Bladwijzer',
+      'bookmarkHere': 'Hier markeren',
+      'bookmarkGoTo': 'Naar bladwijzer',
+      'bookmarkRemove': 'Bladwijzer verwijderen',
+      'bookmarkHint': 'Tip: houd een alinea ingedrukt om die precies te markeren.',
+      'bookmarkPlaced': 'Bladwijzer geplaatst',
+      'undo': 'Ongedaan maken',
     },
     'pt': {
       'chooseLanguage': 'Escolha o seu idioma',
@@ -266,6 +326,16 @@ class S {
       'tapToLoadImage': 'Imagem — toque para carregar',
       'offlineNote': 'Offline — catálogo guardado',
       'dataNote': 'Apenas texto comprimido: ~30 KB por brochura em vez de ~4 MB em PDF.',
+      'readingMode': 'Modo de leitura',
+      'modePages': 'Páginas',
+      'modeScroll': 'Deslizar',
+      'bookmark': 'Marcador',
+      'bookmarkHere': 'Marcar aqui',
+      'bookmarkGoTo': 'Ir para o marcador',
+      'bookmarkRemove': 'Remover marcador',
+      'bookmarkHint': 'Dica: mantenha premido um parágrafo para o marcar com precisão.',
+      'bookmarkPlaced': 'Marcador colocado',
+      'undo': 'Anular',
     },
     'ru': {
       'chooseLanguage': 'Выберите язык',
@@ -302,6 +372,16 @@ class S {
       'tapToLoadImage': 'Изображение — нажмите, чтобы загрузить',
       'offlineNote': 'Офлайн — сохранённый каталог',
       'dataNote': 'Только сжатый текст: ~30 КБ на брошюру вместо ~4 МБ в PDF.',
+      'readingMode': 'Режим чтения',
+      'modePages': 'Страницы',
+      'modeScroll': 'Прокрутка',
+      'bookmark': 'Закладка',
+      'bookmarkHere': 'Отметить здесь',
+      'bookmarkGoTo': 'К закладке',
+      'bookmarkRemove': 'Удалить закладку',
+      'bookmarkHint': 'Совет: удерживайте абзац, чтобы точно отметить его.',
+      'bookmarkPlaced': 'Закладка поставлена',
+      'undo': 'Отменить',
     },
     'ar': {
       'chooseLanguage': 'اختر لغتك',
@@ -338,6 +418,16 @@ class S {
       'tapToLoadImage': 'صورة — اضغط للتحميل',
       'offlineNote': 'بدون اتصال — فهرس محفوظ',
       'dataNote': 'نص مضغوط فقط: حوالي 30 كيلوبايت للكتيّب بدلاً من 4 ميغابايت بصيغة PDF.',
+      'readingMode': 'وضع القراءة',
+      'modePages': 'صفحات',
+      'modeScroll': 'تمرير',
+      'bookmark': 'علامة',
+      'bookmarkHere': 'ضع العلامة هنا',
+      'bookmarkGoTo': 'الانتقال إلى العلامة',
+      'bookmarkRemove': 'إزالة العلامة',
+      'bookmarkHint': 'نصيحة: اضغط مطولاً على فقرة لتعليمها بدقة.',
+      'bookmarkPlaced': 'تم وضع العلامة',
+      'undo': 'تراجع',
     },
     'sw': {
       'chooseLanguage': 'Chagua lugha yako',
@@ -374,6 +464,16 @@ class S {
       'tapToLoadImage': 'Picha — gusa ili kupakia',
       'offlineNote': 'Nje ya mtandao — orodha iliyohifadhiwa',
       'dataNote': 'Maandishi yaliyobanwa tu: ~30 KB kwa kijitabu badala ya ~4 MB kwa PDF.',
+      'readingMode': 'Hali ya kusoma',
+      'modePages': 'Kurasa',
+      'modeScroll': 'Kusogeza',
+      'bookmark': 'Alama',
+      'bookmarkHere': 'Weka alama hapa',
+      'bookmarkGoTo': 'Nenda kwenye alama',
+      'bookmarkRemove': 'Ondoa alama',
+      'bookmarkHint': 'Kidokezo: bonyeza aya kwa muda kuiwekea alama kwa usahihi.',
+      'bookmarkPlaced': 'Alama imewekwa',
+      'undo': 'Tendua',
     },
   };
 }

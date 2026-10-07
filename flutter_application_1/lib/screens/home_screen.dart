@@ -327,6 +327,11 @@ class _LibraryTab extends StatelessWidget {
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      if (app.bookmarks.has(it.key))
+                        Tooltip(
+                          message: s.bookmark,
+                          child: const Icon(Icons.bookmark, color: Brand.red, size: 20),
+                        ),
                       if (app.hasUpdate(it)) DownloadButton(item: it),
                       IconButton(
                         tooltip: s.delete,
